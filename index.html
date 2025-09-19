@@ -27,6 +27,7 @@
     td.actions{display:flex;gap:6px}
     .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,0.03);font-size:12px}
     .small{font-size:12px;color:var(--muted)}
+    details pre{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;overflow-x:auto;margin-top:6px}
     @media (max-width:700px){form{grid-template-columns:1fr} .full{grid-column:1/2}}
   </style>
 </head>
@@ -44,6 +45,89 @@
       </div>
     </header>
 
+    <!-- Quick Reference Section -->
+    <section class="card">
+      <details open>
+        <summary style="cursor:pointer;font-weight:600;font-size:14px;color:#1e90ff;">📘 Student Code of Conduct — Quick Reference</summary>
+        <pre style="white-space:pre-wrap;font-size:12px;line-height:1.4;color:#e6eef8;">
+==============================
+  STUDENT CODE OF CONDUCT
+        QUICK REFERENCE
+==============================
+
+LEVEL 1 – MINOR OFFENSES
+------------------------
+- Examples:
+  - Tardiness, unexcused absence
+  - Minor dress code violations
+  - Talking out of turn, mild disruption
+  - Chewing gum/eating in restricted areas
+  - Failure to bring materials
+  - Cheating or Plagiarizing
+- Consequences:
+  - Verbal warning / counseling
+  - Lunch detention or minor service
+  - Parent/guardian notification
+  - **Repeated Level 1 → 1–3 day suspension**
+
+LEVEL 2 – MODERATE OFFENSES
+---------------------------
+- Examples:
+  - Repeated classroom disruption
+  - Disrespect toward staff/peers
+  - Skipping class / truancy
+  - Minor vandalism / property damage
+  - Inappropriate language / gestures
+  - Reckless Behavior
+  - Reckless Behavior Resulting in Personal Injury
+- Consequences:
+  - Detention / loss of privileges
+  - Parent/guardian conference
+  - School service / behavior plan
+  - **Repeated Level 2 → 1–3 day suspension**
+
+LEVEL 3 – SERIOUS OFFENSES
+--------------------------
+- Examples:
+  - Physical fighting or assault
+  - Bullying, harassment, intimidation
+  - Theft of property
+  - Significant vandalism
+  - Repeated Level 2 offenses
+- Consequences:
+  - Suspension 1–5 days
+  - Behavioral intervention plans
+  - Required parent/guardian involvement
+  - Referral to counseling/restorative justice
+
+LEVEL 4 – SEVERE OFFENSES
+--------------------------
+- Examples:
+  - Weapons possession
+  - Sexual harassment/assault
+  - Threats to people or property
+  - Use/possession/distribution of illegal substances
+  - Repeated Level 3 offenses
+  - Any criminal activity on campus
+- Consequences:
+  - Suspension up to 10+ days
+  - Expulsion recommendation / permanent removal
+  - Police / law enforcement involvement
+  - Immediate parent/guardian notification
+  - Permanent behavioral record
+
+GENERAL NOTES
+-------------
+- Follow all school and classroom rules.
+- Respect staff, peers, and property.
+- Report unsafe or harmful behavior.
+- Consequences may vary based on circumstances and previous behavior.
+- Goal: Educate, correct, and ensure student safety and success.
+        </pre>
+      </details>
+    </section>
+
+    <!-- Logging Form Section -->
     <section class="card">
       <form id="logForm">
         <div>
@@ -306,4 +390,3 @@
   </script>
 </body>
 </html>
-
