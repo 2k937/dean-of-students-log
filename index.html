@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dean of Students — Log</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#1e90ff;--muted:#94a3b8;--surface:#0f1724}
+    *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif}
+    body{margin:0;background:linear-gradient(180deg,#071026 0%,#071833 100%);color:#e6eef8;padding:20px}
+    .container{max-width:1000px;margin:0 auto}
+    header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+    h1{font-size:18px;margin:0}
+    .card{background:rgba(255,255,255,0.03);padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+    input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit}
+    textarea{min-height:70px;resize:vertical}
+    .full{grid-column:1/3}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    button{background:var(--accent);border:none;padding:8px 12px;border-radius:8px;color:#021029;cursor:pointer;font-weight:600}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+    .table-wrap{margin-top:16px;overflow:auto}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{padding:8px;border-bottom:1px dashed rgba(255,255,255,0.03);text-align:left}
+    th{font-size:12px;color:var(--muted)}
+    td.actions{display:flex;gap:6px}
+    .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,0.03);font-size:12px}
+    .small{font-size:12px;color:var(--muted)}
+    @media (max-width:700px){form{grid-template-columns:1fr} .full{grid-column:1/2}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="card" style="padding:10px;display:flex;align-items:center;gap:10px">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zM4 20c0-3.866 3.134-7 7-7h2c3.866 0 7 3.134 7 7v1H4v-1z" fill="#fff" fill-opacity="0.9"/></svg>
+        <div>
+          <h1>Dean of Students — Logging System</h1>
+          <div class="small">Log Lunch Detention, Detention, Suspension, and Expelled cases. Stored in your browser.</div>
+        </div>
+      </div>
+    </header>
+
+    <section class="card">
+      <form id="logForm">
+        <div>
+          <label for="datetime">Date & Time</label>
+          <input id="datetime" type="datetime-local" required />
+        </div>
+
+        <div>
+          <label for="student">Student Name / ID</label>
+          <input id="student" type="text" placeholder="Alex_RBX or ID#" required />
+        </div>
+
+        <div>
+          <label for="action">Action</label>
+          <select id="action" required>
+            <option value="Lunch Detention">Lunch Detention</option>
+            <option value="Detention">Detention</option>
+            <option value="Suspension">Suspension</option>
+            <option value="Expelled">Expelled</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="issuedBy">Issued By</label>
+          <input id="issuedBy" type="text" placeholder="Dean or staff name" required />
+        </div>
+
+        <div class="full">
+          <label for="reason">Reason</label>
+          <input id="reason" type="text" placeholder="Short reason (e.g. Skipped class 5 times)" />
+        </div>
+
+        <div>
+          <label for="duration">Duration</label>
+          <input id="duration" type="text" placeholder="1 hour / 24 hours / Permanent" />
+        </div>
+
+        <div>
+          <label for="notes">Notes</label>
+          <textarea id="notes" placeholder="Optional additional details"></textarea>
+        </div>
+
+        <div class="full actions">
+          <button type="submit">Add Log Entry</button>
+          <button type="button" id="clearForm" class="ghost">Clear</button>
+          <button type="button" id="exportCsv" class="ghost">Export CSV</button>
+          <button type="button" id="importCsv" class="ghost">Import CSV</button>
+          <button type="button" id="clearAll" class="ghost">Clear All Logs</button>
+        </div>
+      </form>
+
+      <div class="table-wrap">
+        <table id="logTable">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Student</th>
+              <th>Action</th>
+              <th>Reason</th>
+              <th>Issued By</th>
+              <th>Duration</th>
+              <th>Notes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <input type="file" id="fileInput" accept="text/csv" style="display:none" />
+
+    </section>
+  </div>
+
+  <script>
+    // Simple client-only logging system using localStorage
+    const STORAGE_KEY = 'dos_logs_v1';
+    const form = document.getElementById('logForm');
+    const tableBody = document.querySelector('#logTable tbody');
+    const fileInput = document.getElementById('fileInput');
+
+    // Helpers
+    function nowLocalIso() {
+      const d = new Date();
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0,16);
+    }
+
+    document.getElementById('datetime').value = nowLocalIso();
+
+    function readLogs(){
+      try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }catch(e){return []}
+    }
+    function saveLogs(logs){ localStorage.setItem(STORAGE_KEY, JSON.stringify(logs)); }
+
+    function render(){
+      const logs = readLogs();
+      tableBody.innerHTML = '';
+      logs.forEach((row, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(row.datetime)}</td>
+          <td>${escapeHtml(row.student)}</td>
+          <td><span class="pill">${escapeHtml(row.action)}</span></td>
+          <td>${escapeHtml(row.reason || '')}</td>
+          <td>${escapeHtml(row.issuedBy)}</td>
+          <td>${escapeHtml(row.duration || '')}</td>
+          <td>${escapeHtml(row.notes || '')}</td>
+          <td class="actions">
+            <button data-i="${i}" class="ghost" onclick="editEntry(${i})">Edit</button>
+            <button data-i="${i}" class="ghost" onclick="deleteEntry(${i})">Delete</button>
+          </td>`;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    function escapeHtml(s){ return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    form.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const entry = {
+        datetime: document.getElementById('datetime').value,
+        student: document.getElementById('student').value.trim(),
+        action: document.getElementById('action').value,
+        reason: document.getElementById('reason').value.trim(),
+        issuedBy: document.getElementById('issuedBy').value.trim(),
+        duration: document.getElementById('duration').value.trim(),
+        notes: document.getElementById('notes').value.trim(),
+      };
+      const logs = readLogs();
+      logs.unshift(entry); // newest first
+      saveLogs(logs);
+      form.reset();
+      document.getElementById('datetime').value = nowLocalIso();
+      render();
+    });
+
+    document.getElementById('clearForm').addEventListener('click', ()=>{
+      form.reset();
+      document.getElementById('datetime').value = nowLocalIso();
+    });
+
+    window.deleteEntry = function(i){
+      if(!confirm('Delete this log entry?')) return;
+      const logs = readLogs(); logs.splice(i,1); saveLogs(logs); render();
+    }
+
+    window.editEntry = function(i){
+      const logs = readLogs(); const e = logs[i];
+      if(!e) return alert('Entry not found');
+      document.getElementById('datetime').value = e.datetime || nowLocalIso();
+      document.getElementById('student').value = e.student || '';
+      document.getElementById('action').value = e.action || 'Lunch Detention';
+      document.getElementById('reason').value = e.reason || '';
+      document.getElementById('issuedBy').value = e.issuedBy || '';
+      document.getElementById('duration').value = e.duration || '';
+      document.getElementById('notes').value = e.notes || '';
+      // remove the old entry so when they submit it becomes updated (simple edit flow)
+      logs.splice(i,1); saveLogs(logs); render();
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+
+    document.getElementById('clearAll').addEventListener('click', ()=>{
+      if(!confirm('Clear ALL logs? This cannot be undone.')) return;
+      localStorage.removeItem(STORAGE_KEY); render();
+    });
+
+    document.getElementById('exportCsv').addEventListener('click', ()=>{
+      const logs = readLogs();
+      if(!logs.length) return alert('No logs to export');
+      const rows = [ ['Date & Time','Student Name/ID','Action','Reason','Issued By','Duration','Notes'] ];
+      logs.slice().reverse().forEach(l=> rows.push([l.datetime,l.student,l.action,l.reason,l.issuedBy,l.duration,l.notes]));
+      const csv = rows.map(r=> r.map(c=> '"'+String(c||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+      const blob = new Blob([csv],{type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'Dean_of_Students_Logs.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('importCsv').addEventListener('click', ()=> fileInput.click());
+    fileInput.addEventListener('change', ()=>{
+      const f = fileInput.files[0]; if(!f) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        const text = reader.result;
+        const lines = text.split(/\r?\n/).filter(Boolean);
+        if(lines.length<2) return alert('CSV seems empty');
+        const out = [];
+        for(let i=1;i<lines.length;i++){
+          const cols = parseCsvLine(lines[i]);
+          if(cols.length<7) continue;
+          out.push({ datetime: cols[0], student: cols[1], action: cols[2], reason: cols[3], issuedBy: cols[4], duration: cols[5], notes: cols[6] });
+        }
+        const logs = readLogs();
+        saveLogs(out.reverse().concat(logs));
+        render();
+        fileInput.value = '';
+      };
+      reader.readAsText(f);
+    });
+
+    function parseCsvLine(line){
+      // basic CSV parser for lines using quotes
+      const res = []; let cur=''; let inq=false;
+      for(let i=0;i<line.length;i++){
+        const ch=line[i];
+        if(ch==='"') { if(inq && line[i+1]==='"'){ cur+='"'; i++; } else { inq=!inq; } }
+        else if(ch===',' && !inq){ res.push(cur); cur=''; }
+        else cur+=ch;
+      }
+      res.push(cur); return res.map(s=>s.replace(/^"|"$/g,''));
+    }
+
+    // initial render
+    render();
+  </script>
+</body>
+</html>
