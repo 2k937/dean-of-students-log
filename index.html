@@ -34,7 +34,9 @@
   <div class="container">
     <header>
       <div class="card" style="padding:10px;display:flex;align-items:center;gap:10px">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zM4 20c0-3.866 3.134-7 7-7h2c3.866 0 7 3.134 7 7v1H4v-1z" fill="#fff" fill-opacity="0.9"/></svg>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zM4 20c0-3.866 3.134-7 7-7h2c3.866 0 7 3.134 7 7v1H4v-1z" fill="#fff" fill-opacity="0.9"/>
+        </svg>
         <div>
           <h1>Dean of Students — Logging System</h1>
           <div class="small">Log Lunch Detention, Detention, Suspension, Expelled, and Police / 911 cases. Stored in your browser.</div>
@@ -171,14 +173,28 @@
 
     function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-    actionSelect.addEventListener('change', ()=>{
+    function updateSecondaryOptions() {
       if(actionSelect.value==='Police / 911 Involved'){
         secondaryContainer.style.display='block';
+        secondarySelect.innerHTML = `
+          <option value="">None</option>
+          <option value="Suspension">Suspension</option>
+          <option value="Expelled">Expelled</option>
+        `;
       } else {
         secondaryContainer.style.display='none';
+        secondarySelect.innerHTML = `
+          <option value="">None</option>
+          <option value="Lunch Detention">Lunch Detention</option>
+          <option value="Detention">Detention</option>
+          <option value="Suspension">Suspension</option>
+          <option value="Expelled">Expelled</option>
+        `;
         secondarySelect.value='';
       }
-    });
+    }
+
+    actionSelect.addEventListener('change', updateSecondaryOptions);
 
     form.addEventListener('submit', (e)=>{
       e.preventDefault();
@@ -193,7 +209,7 @@
       };
 
       const actionsToLog = [entry.action];
-      if(entry.action==='Police / 911 Involved' && secondarySelect.value){
+      if(entry.action==='Police / 911 Involved' && secondarySelect.value && secondarySelect.value !== entry.action){
         actionsToLog.push(secondarySelect.value);
       }
 
@@ -205,16 +221,14 @@
 
       saveLogs(logs);
       form.reset();
-      secondarySelect.value='';
-      secondaryContainer.style.display='none';
+      updateSecondaryOptions();
       document.getElementById('datetime').value = nowLocalIso();
       render();
     });
 
     document.getElementById('clearForm').addEventListener('click', ()=>{
       form.reset();
-      secondarySelect.value='';
-      secondaryContainer.style.display='none';
+      updateSecondaryOptions();
       document.getElementById('datetime').value = nowLocalIso();
     });
 
@@ -233,7 +247,8 @@
       document.getElementById('issuedBy').value = e.issuedBy || '';
       document.getElementById('duration').value = e.duration || '';
       document.getElementById('notes').value = e.notes || '';
-      if(e.action==='Police / 911 Involved'){ secondaryContainer.style.display='block'; secondarySelect.value=''; }
+      updateSecondaryOptions();
+      if(e.action==='Police / 911 Involved'){ secondarySelect.value=''; }
       logs.splice(i,1); saveLogs(logs); render();
       window.scrollTo({top:0,behavior:'smooth'});
     }
@@ -291,3 +306,4 @@
   </script>
 </body>
 </html>
+
