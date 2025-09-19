@@ -37,7 +37,7 @@
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zM4 20c0-3.866 3.134-7 7-7h2c3.866 0 7 3.134 7 7v1H4v-1z" fill="#fff" fill-opacity="0.9"/></svg>
         <div>
           <h1>Dean of Students — Logging System</h1>
-          <div class="small">Log Lunch Detention, Detention, Suspension, and Expelled cases. Stored in your browser.</div>
+          <div class="small">Log Lunch Detention, Detention, Suspension, Expelled, and Police / 911 cases. Stored in your browser.</div>
         </div>
       </div>
     </header>
@@ -57,6 +57,18 @@
         <div>
           <label for="action">Action</label>
           <select id="action" required>
+            <option value="Lunch Detention">Lunch Detention</option>
+            <option value="Detention">Detention</option>
+            <option value="Suspension">Suspension</option>
+            <option value="Expelled">Expelled</option>
+            <option value="Police / 911 Involved">Police / 911 Involved</option>
+          </select>
+        </div>
+
+        <div id="secondaryActionContainer" style="display:none; margin-top:6px;">
+          <label for="secondaryAction">Second Punishment (optional)</label>
+          <select id="secondaryAction">
+            <option value="">None</option>
             <option value="Lunch Detention">Lunch Detention</option>
             <option value="Detention">Detention</option>
             <option value="Suspension">Suspension</option>
@@ -117,13 +129,14 @@
   </div>
 
   <script>
-    // Simple client-only logging system using localStorage
     const STORAGE_KEY = 'dos_logs_v1';
     const form = document.getElementById('logForm');
     const tableBody = document.querySelector('#logTable tbody');
     const fileInput = document.getElementById('fileInput');
+    const actionSelect = document.getElementById('action');
+    const secondaryContainer = document.getElementById('secondaryActionContainer');
+    const secondarySelect = document.getElementById('secondaryAction');
 
-    // Helpers
     function nowLocalIso() {
       const d = new Date();
       d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
@@ -132,24 +145,22 @@
 
     document.getElementById('datetime').value = nowLocalIso();
 
-    function readLogs(){
-      try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }catch(e){return []}
-    }
+    function readLogs(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }catch(e){return []} }
     function saveLogs(logs){ localStorage.setItem(STORAGE_KEY, JSON.stringify(logs)); }
 
     function render(){
       const logs = readLogs();
       tableBody.innerHTML = '';
-      logs.forEach((row, i) => {
+      logs.forEach((row,i)=>{
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${escapeHtml(row.datetime)}</td>
           <td>${escapeHtml(row.student)}</td>
           <td><span class="pill">${escapeHtml(row.action)}</span></td>
-          <td>${escapeHtml(row.reason || '')}</td>
+          <td>${escapeHtml(row.reason||'')}</td>
           <td>${escapeHtml(row.issuedBy)}</td>
-          <td>${escapeHtml(row.duration || '')}</td>
-          <td>${escapeHtml(row.notes || '')}</td>
+          <td>${escapeHtml(row.duration||'')}</td>
+          <td>${escapeHtml(row.notes||'')}</td>
           <td class="actions">
             <button data-i="${i}" class="ghost" onclick="editEntry(${i})">Edit</button>
             <button data-i="${i}" class="ghost" onclick="deleteEntry(${i})">Delete</button>
@@ -158,29 +169,52 @@
       });
     }
 
-    function escapeHtml(s){ return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    actionSelect.addEventListener('change', ()=>{
+      if(actionSelect.value==='Police / 911 Involved'){
+        secondaryContainer.style.display='block';
+      } else {
+        secondaryContainer.style.display='none';
+        secondarySelect.value='';
+      }
+    });
 
     form.addEventListener('submit', (e)=>{
       e.preventDefault();
       const entry = {
         datetime: document.getElementById('datetime').value,
         student: document.getElementById('student').value.trim(),
-        action: document.getElementById('action').value,
+        action: actionSelect.value,
         reason: document.getElementById('reason').value.trim(),
         issuedBy: document.getElementById('issuedBy').value.trim(),
         duration: document.getElementById('duration').value.trim(),
         notes: document.getElementById('notes').value.trim(),
       };
+
+      const actionsToLog = [entry.action];
+      if(entry.action==='Police / 911 Involved' && secondarySelect.value){
+        actionsToLog.push(secondarySelect.value);
+      }
+
       const logs = readLogs();
-      logs.unshift(entry); // newest first
+      actionsToLog.forEach(act=>{
+        const logEntry = {...entry, action:act};
+        logs.unshift(logEntry);
+      });
+
       saveLogs(logs);
       form.reset();
+      secondarySelect.value='';
+      secondaryContainer.style.display='none';
       document.getElementById('datetime').value = nowLocalIso();
       render();
     });
 
     document.getElementById('clearForm').addEventListener('click', ()=>{
       form.reset();
+      secondarySelect.value='';
+      secondaryContainer.style.display='none';
       document.getElementById('datetime').value = nowLocalIso();
     });
 
@@ -199,7 +233,7 @@
       document.getElementById('issuedBy').value = e.issuedBy || '';
       document.getElementById('duration').value = e.duration || '';
       document.getElementById('notes').value = e.notes || '';
-      // remove the old entry so when they submit it becomes updated (simple edit flow)
+      if(e.action==='Police / 911 Involved'){ secondaryContainer.style.display='block'; secondarySelect.value=''; }
       logs.splice(i,1); saveLogs(logs); render();
       window.scrollTo({top:0,behavior:'smooth'});
     }
@@ -212,12 +246,12 @@
     document.getElementById('exportCsv').addEventListener('click', ()=>{
       const logs = readLogs();
       if(!logs.length) return alert('No logs to export');
-      const rows = [ ['Date & Time','Student Name/ID','Action','Reason','Issued By','Duration','Notes'] ];
+      const rows = [['Date & Time','Student Name/ID','Action','Reason','Issued By','Duration','Notes']];
       logs.slice().reverse().forEach(l=> rows.push([l.datetime,l.student,l.action,l.reason,l.issuedBy,l.duration,l.notes]));
-      const csv = rows.map(r=> r.map(c=> '"'+String(c||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+      const csv = rows.map(r=> '"'+r.map(c=>String(c||'').replace(/"/g,'""')).join('" ,"')+'"').join('\n');
       const blob = new Blob([csv],{type:'text/csv'});
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = 'Dean_of_Students_Logs.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      const a = document.createElement('a'); a.href=url; a.download='Dean_of_Students_Logs.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     });
 
     document.getElementById('importCsv').addEventListener('click', ()=> fileInput.click());
@@ -243,18 +277,16 @@
     });
 
     function parseCsvLine(line){
-      // basic CSV parser for lines using quotes
-      const res = []; let cur=''; let inq=false;
+      const res=[]; let cur=''; let inq=false;
       for(let i=0;i<line.length;i++){
         const ch=line[i];
-        if(ch==='"') { if(inq && line[i+1]==='"'){ cur+='"'; i++; } else { inq=!inq; } }
+        if(ch==='"'){ if(inq && line[i+1]==='"'){ cur+='"'; i++; } else { inq=!inq; } }
         else if(ch===',' && !inq){ res.push(cur); cur=''; }
         else cur+=ch;
       }
       res.push(cur); return res.map(s=>s.replace(/^"|"$/g,''));
     }
 
-    // initial render
     render();
   </script>
 </body>
